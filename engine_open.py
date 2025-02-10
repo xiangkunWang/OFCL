@@ -212,20 +212,14 @@ def cluster_metric(y_true, y_pred):
     y_pred=y_pred.to('cpu').numpy()
     y_true=y_true.to('cpu').numpy()
     from scipy.optimize import linear_sum_assignment
-    # 获取所有唯一的聚类结果标签和真实标签
     unique_db_labels = np.unique(y_pred)
     unique_true_labels = np.unique(y_true)
-    # 创建相似度矩阵并初始化为0
     similarity_matrix = np.zeros((len(unique_db_labels), len(unique_true_labels)))
-    # 计算相似度矩阵，相似度越大，匹配程度越高
     for i, db_label in enumerate(unique_db_labels):
         for j, true_label in enumerate(unique_true_labels):
-            # 计算相同标签的样本数量
             count = np.sum((y_pred == db_label) & (y_true == true_label))
             similarity_matrix[i, j] = count
-    # 使用匈牙利算法进行最优匹配
     row_ind, col_ind = linear_sum_assignment(-similarity_matrix)
-    # 根据匹配结果进行标签映射
     mapped_labels = np.zeros_like(y_pred)
     for i, db_label in enumerate(unique_db_labels):
         mapped_labels[y_pred == db_label] = unique_true_labels[col_ind[i]]
@@ -236,11 +230,8 @@ def cluster_metric(y_true, y_pred):
 #     y_pred=y_pred.to('cpu').numpy()
 #     y_true=y_true.to('cpu').numpy()
 #     from scipy.optimize import linear_sum_assignment
-#     # 创建相似度矩阵并初始化为0
 #     similarity_matrix = torch.cdist(unknown_reps, unknown_reps).to('cpu')
-#     # 使用匈牙利算法进行最优匹配
 #     row_ind, col_ind = linear_sum_assignment(-similarity_matrix)
-#     # 根据匹配结果进行标签映射
 #     mapped_labels = np.zeros_like(y_pred)
 #     for i in row_ind:
 #         mapped_labels[i]=y_true[col_ind[i]]
@@ -271,15 +262,11 @@ def get_anchors_radius(unknown_reps_dict,args=None):
 def get_topk_class(unknown_reps, unknown_anchor_dict, unknown_R_dict,shots):
     nearest_vectors = {}
     ids= {}
-    # 对于每个质心
     for label, centroid in unknown_anchor_dict.items():
-        # 计算向量与质心之间的距离
         distances = [torch.dist(centroid, vector) for vector in unknown_reps]
 
-        # 对距离进行排序，返回排序后的索引
         sorted_indices = torch.argsort(torch.tensor(distances))
 
-        # 取排序后的前五个索引，得到最近的五个向量及其索引
         if unknown_R_dict[label] >= distances[sorted_indices[shots-1]]:
             nearest_vectors[label] = unknown_reps[sorted_indices[:shots]]
             ids[label]=sorted_indices[:shots]
@@ -318,7 +305,6 @@ def clusters(all_reps,open_id,all_targets,epsilon,min_samples,args):
     unknown_id = torch.where(open_id == -1)
     unknown_reps = all_reps[unknown_id]
     dbscan = DBSCAN(eps=epsilon, min_samples=min_samples)
-    # 对id为-1的向量进行聚类
     y_pred = torch.tensor(dbscan.fit_predict(unknown_reps.to('cpu')))
     y_pred_dict = {}
     for index, label in enumerate(y_pred):
@@ -337,10 +323,8 @@ def clusters(all_reps,open_id,all_targets,epsilon,min_samples,args):
         else:
             unknown_reps_dict[t] = unknown_reps[i].unsqueeze(0)
 
-    # 计算每个未知类的锚点以及半径
     unknown_anchor_dict,unknown_R_dict=get_anchors_radius(unknown_reps_dict,args)
     nearest_reps,ids = get_topk_class(unknown_reps,unknown_anchor_dict,unknown_R_dict,args.shots)
-    # 计算打标签准确率
     labeling_acc=get_labeling_acc(ids,y_true)
 
     return cluster_acc, labeling_acc
@@ -480,26 +464,7 @@ def evaluate(model: torch.nn.Module, original_model: torch.nn.Module, data_loade
                 metric_logger.meters['Acc@dis'].update(known_acc.item(), n=input.shape[0])
                 metric_logger.meters['AUROC'].update(auroc.item(), n=all_open_targets.shape[0])
                 metric_logger.meters['FPR95@+'].update(fpr95.item(), n=all_open_targets.shape[0])
-                # if test_task_id==task_id:
-                #     prompt = output['selected_prompt']
-                #     key = output['selected_key']
-                #     # 将tensor转换为numpy数组
-                #     prompt_numpy_array = torch.cat((prompt,target.unsqueeze(1)),dim=1).to('cpu').numpy()
-                #     prompt_key_array=torch.cat((key,target.unsqueeze(1)),dim=1).to('cpu').numpy()
-                #     # 创建DataFrame对象
-                #     prompt_df = pd.DataFrame(prompt_numpy_array)
-                #     prompt_key_df = pd.DataFrame(prompt_key_array)
-                #     # 将prompt_df保存到Excel文件，追加写入
-                #     prompt_file_path = './output/prompt_vector.txt'
-                #     save_df_to_txt(prompt_df, prompt_file_path)
-                #     # 将prompt_key_df保存到Excel文件，追加写入
-                #     key_file_path = './output/key_vector.txt'
-                #     save_df_to_txt(prompt_key_df, key_file_path)
-            # if test_task_id==task_id and task_id==1:
-            #     o_c_label=torch.cat((all_open_targets_t.unsqueeze(1), all_targets_t.unsqueeze(1)), dim=1)
-            #     all_reps_t_array=torch.cat((all_reps_t, o_c_label), dim=1).to('cpu').numpy()
-            #     df = pd.DataFrame(all_reps_t_array)
-            #     df.to_excel("./output/reps.xlsx",index=False,header=False)
+                
             if test_task_id==task_id and task_id==1:
                 o_c_label=torch.cat((all_open_targets_t.unsqueeze(1), all_targets_t.unsqueeze(1)), dim=1)
                 all_logits_t_array=torch.cat((all_logits_t, o_c_label), dim=1).to('cpu').numpy()
@@ -512,15 +477,7 @@ def evaluate(model: torch.nn.Module, original_model: torch.nn.Module, data_loade
                 top1=metric_logger.meters['Acc@1'],acc_dis=metric_logger.meters['Acc@dis'], top5=metric_logger.meters['Acc@5'],
                 losses=metric_logger.meters['Loss'],auroc=metric_logger.meters['AUROC'], fpr=metric_logger.meters['FPR95@+'])
             print(test_result)
-            # if task_id == test_task_id:
-            #     # 保存test_result到txt文件
-            #     with open('output/acc_matrix.txt', 'a') as f:
-            #         f.write(test_result.encode('utf-8'))  # 将字符串转换为字节流并写入文件
-            #         f.write(b"\n")  # 写入换行符
-            #     # 保存test_result到txt文件
-            #     with open('output/dis_acc_matrix.txt', 'a') as f:
-            #         f.write(test_result.encode('utf-8'))  # 将字符串转换为字节流并写入文件
-            #         f.write(b"\n")  # 写入换行符
+           
             return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
         else:
             for input, target in metric_logger.log_every(data_loader, args.print_freq, header):
@@ -535,14 +492,10 @@ def evaluate(model: torch.nn.Module, original_model: torch.nn.Module, data_loade
                 output = model(input, task_id=task_id, cls_features=cls_features, train=False)
                 logits = output['logits']
                 reps = output['pre_logits']
-                # import time
-                # start_time = time.time()
 
                 classification_id, open_id = open_classfier(reps)
 
-                # end_time = time.time()
-                # run_time = end_time - start_time
-                # print("知识空间程序运行时间：", run_time, "秒")
+               
                 classification_id = classification_id.to(device, non_blocking=True)
                 open_id = open_id.to(device, non_blocking=True)
                 known_acc, fpr95, auroc = eval_metric(classification_id, open_id, target, cur_open_target,open=False)
@@ -564,21 +517,7 @@ def evaluate(model: torch.nn.Module, original_model: torch.nn.Module, data_loade
                 metric_logger.meters['Acc@dis'].update(known_acc.item(), n=input.shape[0])
                 metric_logger.meters['AUROC'].update(auroc.item(), n=cur_open_target.shape[0])
                 metric_logger.meters['FPR95@+'].update(fpr95.item(), n=cur_open_target.shape[0])
-                # if test_task_id == task_id:
-                #     prompt = output['selected_prompt']
-                #     key = output['selected_key']
-                #     # 将tensor转换为numpy数组
-                #     prompt_numpy_array = torch.cat((prompt, target.unsqueeze(1)), dim=1).to('cpu').numpy()
-                #     prompt_key_array = torch.cat((key, target.unsqueeze(1)), dim=1).to('cpu').numpy()
-                #     # 创建DataFrame对象
-                #     prompt_df = pd.DataFrame(prompt_numpy_array)
-                #     prompt_key_df = pd.DataFrame(prompt_key_array)
-                #     # 将prompt_df保存到Excel文件，追加写入
-                #     prompt_file_path = './output/prompt_vector.txt'
-                #     save_df_to_txt(prompt_df, prompt_file_path)
-                #     # 将prompt_key_df保存到Excel文件，追加写入
-                #     key_file_path = './output/key_vector.txt'
-                #     save_df_to_txt(prompt_key_df, key_file_path)
+            
 
             metric_logger.synchronize_between_processes()
             test_result = '* Acc@1 {top1.global_avg:.3f} Acc@dis {acc_dis.global_avg:.3f} Acc@5 {top5.global_avg:.3f} loss {losses.global_avg:.3f}  AUROC {auroc.global_avg:.3f}  FPR95@+ {fpr.global_avg:.3f}'.format(
@@ -601,10 +540,7 @@ def evaluate_till_now(model: torch.nn.Module, original_model: torch.nn.Module, d
             latter_data_loader = None
         test_stats = evaluate(model=model, original_model=original_model, data_loader=data_loader[i]['val'], latter_data_loader=latter_data_loader,
                               device=device, test_task_id=i,task_id=task_id, class_mask=class_mask, args=args)
-        # anchor_dict_memory_size = get_dict_memory_size(anchor_dict)
-        # R_dict_memory_size = get_dict_memory_size(R_dict)
-        # print("anchor_dict字典内存大小:", anchor_dict_memory_size, "字节")
-        # print("R_dict字典内存大小:", R_dict_memory_size, "字节")
+       
         stat_matrix[0, i] = test_stats['Acc@1']
         stat_matrix[1, i] = test_stats['Acc@5']
         stat_matrix[2, i] = test_stats['Loss']
@@ -628,14 +564,14 @@ def evaluate_till_now(model: torch.nn.Module, original_model: torch.nn.Module, d
         result_str += "\tdis_Forgetting: {:.4f}\tdis_Backward: {:.4f}".format(forgetting, backward)
     print(result_str)
     if task_id==args.n_tasks-1:
-        # 保存acc_matrix到txt文件
+        
         with open('./output/acc_matrix.txt', 'a') as f:
             f.write("\n")
             for arg in vars(args):
                 f.write(f"{arg}: {getattr(args, arg)}\t")
             f.write("\n")
             np.savetxt(f, acc_matrix, delimiter='\t')
-        # 保存dis_acc_matrix到txt文件
+       
         with open('./output/dis_acc_matrix.txt', 'a') as f:
             f.write("\n")
             for arg in vars(args):
