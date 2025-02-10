@@ -67,16 +67,7 @@ class Prompt(nn.Module):
         if self.is_training:
             prompt = self.prompt_list[self.task_id]
             prompt_key = self.prompt_key_list[self.task_id]
-            # if task_id==0:
-            #     prompt_list = self.prompt_list[0:self.num_base]
-            #     prompt_key_list = self.prompt_key_list[0:self.num_base]
-            #     prompt = torch.cat(prompt_list, dim=0)
-            #     prompt_key = torch.cat(prompt_key_list, dim=0)
-            # else:
-            #     prompt_list=self.prompt_list[self.num_base+self.task_id*self.ways:self.num_base+self.task_id*self.ways+self.ways]
-            #     prompt_key_list=self.prompt_key_list[self.num_base+self.task_id*self.ways:self.num_base+self.task_id*self.ways+self.ways]
-            #     prompt = torch.cat(prompt_list, dim=0)
-            #     prompt_key = torch.cat(prompt_key_list, dim=0)
+            
             self.start = 0
         else:
             prompt_list = []
@@ -85,40 +76,7 @@ class Prompt(nn.Module):
                 prompt_list.append(self.prompt_list[i])
                 prompt_key_list.append(self.prompt_key_list[i])
             prompt = torch.cat(prompt_list, dim=0)
-            # prompt_num_elements = torch.numel(prompt)
-            # # 计算内存大小
-            # prompt_memory_size = prompt_num_elements * prompt.element_size()
-            # print("prompt内存大小:", prompt_memory_size, "字节")
-            prompt_key = torch.cat(prompt_key_list, dim=0)
-            # key_num_elements = torch.numel(prompt_key)
-            # # 计算内存大小
-            # key_memory_size = key_num_elements * prompt_key.element_size()
-            # print("key内存大小:", key_memory_size, "字节")
-            # if task_id==0:
-            #     prompt_list = self.prompt_list[0:self.num_base]
-            #     prompt_key_list = self.prompt_key_list[0:self.num_base]
-            #     prompt = torch.cat(prompt_list, dim=0)
-            #     prompt_key = torch.cat(prompt_key_list, dim=0)
-            # else:
-            #     prompt_list = self.prompt_list[0:self.num_base+self.task_id * self.ways + self.ways]
-            #     prompt_key_list = self.prompt_key_list[0:self.num_base+self.task_id * self.ways + self.ways]
-            #     prompt = torch.cat(prompt_list, dim=0)
-            #     prompt_key = torch.cat(prompt_key_list, dim=0)
-            # if self.start==0:
-            #     # 将tensor转换为numpy数组
-            #     prompt_numpy_array = prompt.view(prompt.shape[0], prompt.shape[1] * prompt.shape[2]).to('cpu').numpy()
-            #     # 创建DataFrame对象
-            #     prompt_df = pd.DataFrame(prompt_numpy_array)
-            #     # 保存DataFrame对象为Excel文件
-            #     prompt_file_path = './output/prompt_vector' + str(self.task_id) + '.xlsx'
-            #     prompt_df.to_excel(prompt_file_path, index=False)
-            #     key_numpy_array = prompt_key.to('cpu').numpy()
-            #     # 创建DataFrame对象
-            #     prompt_key_df = pd.DataFrame(key_numpy_array)
-            #     # 保存DataFrame对象为Excel文件
-            #     key_file_path = './output/key_vector' + str(self.task_id) + '.xlsx'
-            #     prompt_key_df.to_excel(key_file_path, index=False)
-            #     self.start=1
+            
         out = dict()
 
         assert self.prompt_pool==True
@@ -174,10 +132,7 @@ class Prompt(nn.Module):
                 idx = prompt_mask  # B, top_k
 
             batched_prompt_raw = prompt[idx]  # B, top_k, length, C
-            # 在这里写入你的代码
-            # end_time = time.time()
-            # run_time = end_time - start_time
-            # print("提示程序运行时间：", run_time, "秒")
+            
             batch_size, top_k, length, c = batched_prompt_raw.shape
             batched_prompt = batched_prompt_raw.reshape(batch_size, top_k * length, c)  # B, top_k * length, C
 
