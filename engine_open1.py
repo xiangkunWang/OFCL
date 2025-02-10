@@ -166,11 +166,7 @@ def classfier(all_reps,epsilon,min_samples):
         else:
             classification_id[id] = -1
             open_id[id] = -1
-    # unknown_id = np.where(open_id == -1)
-    # unknown_reps = all_reps[unknown_id]
-    # dbscan = DBSCAN(eps=epsilon, min_samples=min_samples)
-    # # 对id为-1的向量进行聚类
-    # labels = torch.tensor(dbscan.fit_predict(unknown_reps.to('cpu')))
+   
 
     return classification_id,open_id
 
@@ -203,24 +199,6 @@ def eval_metric(classification_id,open_id,all_targets,all_open_targets,open=True
     known_acc=torch.tensor(100*known_acc/num)
     return known_acc,fpr95,auroc
 
-# def open_detection(open_detection_id,all_reps,M,epsilon,min_samples):
-#
-#     unknown_id = np.where(open_detection_id==-1)
-#     unknown_reps=all_reps[unknown_id]
-#     dbscan = DBSCAN(eps=epsilon, min_samples=min_samples)
-#     # 对id为-1的向量进行聚类
-#     labels = torch.tensor(dbscan.fit_predict(unknown_reps.to('cpu')))
-#
-#     for i,label in enumerate(labels):
-#         if label !=-1 and label !=0:
-#             if label in unknown_anchor_dict:
-#                 labels[i]=
-#
-#
-#     # 输出聚类结果
-#     open_detection_id[unknown_id]=labels
-#
-#     return open_detection_id
 
 
 @torch.no_grad()
